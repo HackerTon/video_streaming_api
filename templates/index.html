@@ -1,0 +1,22 @@
+<html>
+
+<head>
+    <link rel="icon" href="data:,">
+    <link href="https://vjs.zencdn.net/7.11.4/video-js.css" rel="stylesheet" />
+
+</head>
+
+<body>
+    <video id="video" class="video-js" preload="auto" width="640" height="264" controls>
+        <source type="application/x-mpegURL" src="http://192.168.1.100:5000/play">
+    </video>
+
+    <script src="https://unpkg.com/video.js/dist/video.js"></script>
+    <script src="https://unpkg.com/@videojs/http-streaming/dist/videojs-http-streaming.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/cesiumjs/1.78/Build/Cesium/Cesium.js"></script>
+    <script>
+        var player = videojs('video', { 'liveui': true });
+    </script>
+</body>
+
+</html>
