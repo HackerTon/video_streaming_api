@@ -1,64 +1,60 @@
 import asyncio
 import os
 import random
-import redis
+import sys
 
 import aioredis
 import ffmpeg
+import redis
 from quart import Quart, render_template, request, send_file
 from quart.json import jsonify
-from quart.utils import run_sync
 
 app = Quart(__name__)
 app.clients = set()
 
-DIRECTORY = "/home/hackerton/Videos"
+try:
+    DIRECTORY = os.environ["DIRECTORY"] if os.environ["DIRECTORY"] else sys.exit()
+    OUTPUT_DIRECTORY = (
+        os.environ["OUTPUT_DIR"] if os.environ["DIRECTORY"] else sys.exit()
+    )
+except KeyError as e:
+    print("Set environment variable DIRECTORY & OUTPUT_DIR!")
+    sys.exit()
 
 
+# route for main screen
 @app.route("/")
 async def index():
     return await render_template("index.html")
 
 
-@app.route("/send")
-async def send():
-    data = request.args.get("a")
+# route for video segment path
+@app.route("/videos/<path>")
+async def path(path):
+    file_path = os.path.join(OUTPUT_DIRECTORY, path)
 
-    for queue in app.clients:
-        await queue.put(data)
-
-    return jsonify(True)
+    return await send_file(file_path, mimetype="application/x-mpegurl", cache_timeout=0)
 
 
-# @app.route("/<path>")
-# async def path(path):
-#     return await send_file(
-#         f"/home/hackerton/Videos/2021-07-28_20-22-23/{path}",
-#         mimetype="application/x-mpegURL",
-#     )
+# route for all keys
+@app.route("/list")
+async def list_all():
+    tredis = aioredis.from_url("redis://localhost", decode_responses=True)
+    keys = await tredis.keys()
+    items = [await tredis.hgetall(key) for key in keys]
+
+    return jsonify(items)
 
 
-@app.route("/routine")
-async def routine():
-    queue = asyncio.Queue()
-    app.clients.add(queue)
-
-    # async generator
-    async def send_events():
-        while True:
-            data = await queue.get()
-            yield data
-
-    return send_events()
-
-
+# route to get the playlist
 @app.route("/play/<id>")
 async def play(id):
     redis = aioredis.from_url("redis://localhost", decode_responses=True)
 
     async with redis.client() as conn:
-        result = await conn.hmget(str(id), "state")
-        result = 0 if result[0] == None else result[0]
+        data = await conn.hgetall(str(id))
+        print(data)
+        # result = 0 if result[] == None else result[0]
 
     # 0 = new not in server
     # 1 = processing
@@ -73,39 +69,51 @@ async def play(id):
     else:
         raise Exception("internal server error")
 
-    # return await send_file(
-    #     "/home/hackerton/Videos/2021-07-28_20-22-23/2021-07-28_20-22-23.m3u8",
-    #     mimetype="application/x-mpegURL",
-    #     as_attachment=False,
-    # )
+    # return the video playlist
+    return await send_file(
+        "/home/hackerton/Videos/2021-07-28_20-22-23/2021-07-28_20-22-23.m3u8",
+        mimetype="application/x-mpegURL",
+        as_attachment=False,
+        cache_timeout=1,
+    )
 
 
+# command to update all videos
 @app.route("/update")
 async def update():
     def synchronous():
-        # list of all videos path relative to current path
+        r = redis.Redis()
+        # list of all videos path relative to DIRECTORY
         list_videos = os.listdir(DIRECTORY)
 
         # transcode video to mp4
-        for video_path in list_videos:
-            file_type = video_path.split(".")[-1]
+        for rel_path in list_videos:
+            # absolute path of the files or directory of times in DIRECTORY
+            abs_path = os.path.join(DIRECTORY, rel_path)
 
-            # if dir continue
-            # skip this path
-            if os.path.isdir(os.path.join(DIRECTORY, video_path)):
+            # skip this if directory
+            if os.path.isdir(abs_path):
                 continue
 
-            # run only when the file is not mp4
-            if file_type != "mp4":
-                abs_path = os.path.join(DIRECTORY, video_path)
-                names = video_path.split(".")[:-1]
+            # extract the filetype from the rel_path etc..
+            # mp4, mkv, mp3...
+            file_type = rel_path.split(".")[-1]
 
-                # check for existance first
-                if os.path.exists(os.path.join(DIRECTORY, "_".join(names))):
+            # trancode if the video file is supported
+            if file_type in ["mp4", "mkv", "flv", "webm"]:
+                # extract name of the video from rel_path
+                video_name = "".join(rel_path.split(".")[:-1])
+
+                # set path to videos/something.m8u3
+                output_path = os.path.join(OUTPUT_DIRECTORY, f"{video_name}.m8u3")
+
+                print("debug path")
+                for line in [rel_path, abs_path, output_path]:
+                    print(line)
+
+                if os.path.exists(output_path):
+                    print(f"{output_path} existed, Not process!")
                     continue
-
-                # make directory
-                os.makedirs(os.path.join(DIRECTORY, "_".join(names)))
 
                 v_input = ffmpeg.input(abs_path)
                 audio = v_input.audio
@@ -113,30 +121,24 @@ async def update():
                 output = ffmpeg.output(
                     audio,
                     video,
-                    os.path.join(DIRECTORY, "_".join(names), f"{''.join(names)}.m3u8"),
+                    output_path,
                     f="hls",
+                    hls_segment_filename=os.path.join(
+                        OUTPUT_DIRECTORY, f"video_%04d.ts"
+                    ),
                     hls_time=4,
                     hls_playlist_type="event",
                 )
 
                 key = random.getrandbits(32)
-                r = redis.Redis()
-                r.hmset(key, {"name": video_path, "state": 1})
+
+                r.hset(key, mapping={"name": f'{"".join(video_name)}.m3u8', "state": 1})
                 ffmpeg.run(output)
-                r.hmset(key, {"name": video_path, "state": 2})
+                r.hset(key, mapping={"name": f'{"".join(video_name)}.m3u8', "state": 2})
 
     asyncio.get_running_loop().run_in_executor(None, synchronous)
 
-    return "we are updating the diagram"
-
-
-# async def main():
-#     redis = aioredis.from_url("redis://localhost")
-
-#     await redis.rpush("alan1", "alan")
-#     await redis.rpush("alan1", "16")
-
-#     print(await redis.lrange("alan1", 0, -1))
+    return "we are updating all videos"
 
 
 if __name__ == "__main__":
