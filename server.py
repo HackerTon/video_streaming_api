@@ -39,7 +39,7 @@ async def css():
 async def path(path):
     file_path = os.path.join(OUTPUT_DIRECTORY, path)
 
-    return await send_file(file_path, mimetype="application/x-mpegurl", cache_timeout=0)
+    return await send_file(file_path, mimetype="application/x-mpegurl", cache_timeout=1)
 
 
 # route for all keys
@@ -84,6 +84,17 @@ async def play(id):
     )
 
 
+def split_parts_probe(path):
+    probe = ffmpeg.probe(path)
+    video = [stream for stream in probe["streams"] if stream["codec_type"] == "video"]
+    audio = [stream for stream in probe["streams"] if stream["codec_type"] == "audio"]
+    subtitle = [
+        stream for stream in probe["streams"] if stream["codec_type"] == "subtitle"
+    ]
+
+    return video, audio, subtitle
+
+
 # command to update all videos
 @app.route("/update")
 async def update():
@@ -99,48 +110,59 @@ async def update():
             abs_path = item
             rel_path = abs_path.split("/")[-1]
 
-            # extract the filetype from the rel_path etc..
-            # mp4, mkv, mp3...
-            file_type = rel_path.split(".")[-1]
+            m_video, m_audio, m_subtitle = split_parts_probe(abs_path)
 
-            # trancode if the video file is supported
-            if file_type in ["mp4", "mkv", "flv", "webm"]:
-                # extract name of the video from rel_path
-                video_name = "".join(rel_path.split(".")[:-1])
+            # extract name of the video from rel_path
+            video_name = "".join(rel_path.split(".")[:-1])
+            # set path to videos/something.m8u3
+            output_path = os.path.join(OUTPUT_DIRECTORY, f"{video_name}.m8u3")
 
-                # set path to videos/something.m8u3
-                output_path = os.path.join(OUTPUT_DIRECTORY, f"{video_name}.m8u3")
+            # print("debug path")
+            # for line in [rel_path, abs_path, output_path]:
+            #     print(line)
 
-                print("debug path")
-                for line in [rel_path, abs_path, output_path]:
-                    print(line)
+            if os.path.exists(output_path):
+                print(f"{output_path} existed, Not process!")
+                continue
 
-                if os.path.exists(output_path):
-                    print(f"{output_path} existed, Not process!")
-                    continue
+            v_input = ffmpeg.input(abs_path)
+            video = v_input.video
+            vcodec = "copy"
+            acodec = "copy"
 
-                v_input = ffmpeg.input(abs_path)
-                audio = v_input.audio
-                video = v_input.video
-                output = ffmpeg.output(
-                    audio,
-                    video,
-                    output_path,
-                    f="hls",
-                    hls_segment_filename=os.path.join(
-                        OUTPUT_DIRECTORY, f"{video_name}_%04d.ts"
-                    ),
-                    hls_time=4,
-                    hls_playlist_type="event",
-                    vcodec="copy",
-                    acodec="copy",
-                )
+            audio = v_input["a:0"]
 
-                key = random.getrandbits(32)
+            if m_audio[0]["codec_name"] != "aac":
+                acodec = "aac"
 
-                r.hset(key, mapping={"name": f'{"".join(video_name)}.m8u3', "state": 1})
-                ffmpeg.run(output)
-                r.hset(key, mapping={"name": f'{"".join(video_name)}.m8u3', "state": 2})
+            # if subtitle is built-in
+            # embedded subtitle into video
+            # must transcode
+            if m_subtitle:
+                video = ffmpeg.filter(video, "subtitles", filename=abs_path)
+                vcodec = "h264"
+
+            output = ffmpeg.output(
+                video,
+                audio,
+                output_path,
+                f="hls",
+                hls_segment_filename=os.path.join(
+                    OUTPUT_DIRECTORY, f"{video_name}_%04d.ts"
+                ),
+                hls_time=4,
+                hls_playlist_type="event",
+                vcodec=vcodec,
+                acodec=acodec,
+                audio_bitrate="200k",
+                ac=2,
+            )
+
+            key = random.getrandbits(32)
+
+            r.hset(key, mapping={"name": f'{"".join(video_name)}.m8u3', "state": 1})
+            ffmpeg.run(output)
+            r.hset(key, mapping={"name": f'{"".join(video_name)}.m8u3', "state": 2})
 
     asyncio.get_running_loop().run_in_executor(None, synchronous)
 
