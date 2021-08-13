@@ -1,5 +1,6 @@
 import asyncio
 import os
+import glob
 import random
 import sys
 
@@ -26,6 +27,11 @@ except KeyError as e:
 @app.route("/")
 async def index():
     return await render_template("index.html")
+
+
+@app.route("/tailwind.css")
+async def css():
+    return await send_file("templates/tailwind.css")
 
 
 # route for video segment path
@@ -83,17 +89,15 @@ async def play(id):
 async def update():
     def synchronous():
         r = redis.Redis()
-        # list of all videos path relative to DIRECTORY
-        list_videos = os.listdir(DIRECTORY)
+        supported = ["mkv", "mp4"]
+        items = []
 
-        # transcode video to mp4
-        for rel_path in list_videos:
-            # absolute path of the files or directory of times in DIRECTORY
-            abs_path = os.path.join(DIRECTORY, rel_path)
+        for container in supported:
+            items += glob.glob(f"{DIRECTORY}/**/*.{container}", recursive=True)
 
-            # skip this if directory
-            if os.path.isdir(abs_path):
-                continue
+        for item in items:
+            abs_path = item
+            rel_path = abs_path.split("/")[-1]
 
             # extract the filetype from the rel_path etc..
             # mp4, mkv, mp3...
@@ -124,21 +128,41 @@ async def update():
                     output_path,
                     f="hls",
                     hls_segment_filename=os.path.join(
-                        OUTPUT_DIRECTORY, f"video_%04d.ts"
+                        OUTPUT_DIRECTORY, f"{video_name}_%04d.ts"
                     ),
                     hls_time=4,
                     hls_playlist_type="event",
+                    vcodec="copy",
+                    acodec="copy",
                 )
 
                 key = random.getrandbits(32)
 
-                r.hset(key, mapping={"name": f'{"".join(video_name)}.m3u8', "state": 1})
+                r.hset(key, mapping={"name": f'{"".join(video_name)}.m8u3', "state": 1})
                 ffmpeg.run(output)
-                r.hset(key, mapping={"name": f'{"".join(video_name)}.m3u8', "state": 2})
+                r.hset(key, mapping={"name": f'{"".join(video_name)}.m8u3', "state": 2})
 
     asyncio.get_running_loop().run_in_executor(None, synchronous)
 
     return "we are updating all videos"
+
+
+@app.route("/debug")
+async def debug():
+    def sync():
+        # find supported video stream
+        supported = ["mkv", "mp4"]
+        items = []
+
+        for container in supported:
+            items += glob.glob(f"{DIRECTORY}/**/*.{container}", recursive=True)
+
+        for item in items:
+            print(item)
+
+    asyncio.get_running_loop().run_in_executor(None, sync)
+
+    return "this is just a debug"
 
 
 if __name__ == "__main__":

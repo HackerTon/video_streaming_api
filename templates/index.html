@@ -1,34 +1,60 @@
+<!DOCTYPE html>
 <html>
 
 <head>
     <link rel="icon" href="data:," />
     <link href="https://vjs.zencdn.net/7.11.4/video-js.css" rel="stylesheet" />
+    <link href="http://192.168.1.103:5000/tailwind.css" rel="stylesheet" />
 </head>
 
 <body>
-    <div id="selection"></div>
-    <video id="video" class="video-js" preload="auto" width="640" height="264" controls>
-        <source type="application/x-mpegURL" src="http://192.168.1.103:5000/videos/2021-07-28_20-22-23.m8u3" />
-    </video>
-
+    <div id="selection" class="grid grid-cols-1 place-items-center p-5 gap-5"></div>
+    <div class="grid grid-cols-1 px-5">
+        <video id="video" class="video-js" preload="auto" controls>
+            <source type="application/x-mpegURL" src="http://192.168.1.103:5000/videos/2021-07-28_20-22-23.m8u3" />
+        </video>
+    </div>
     <script src="https://unpkg.com/video.js/dist/video.js"></script>
     <script src="https://unpkg.com/@videojs/http-streaming/dist/videojs-http-streaming.js"></script>
     <script src="https://ajax.googleapis.com/ajax/libs/cesiumjs/1.78/Build/Cesium/Cesium.js"></script>
     <script>
-        let player = videojs("video", { liveui: true });
+        let player = videojs("video", { liveui: true, fluid: true });
         let boxes = document.getElementById("selection");
 
         let request = new XMLHttpRequest();
-        request.open('GET', 'http://192.168.1.103:5000/list');
-        request.responseType = 'json';
+        request.open("GET", "http://192.168.1.103:5000/list");
+        request.responseType = "json";
         request.send();
 
         request.onload = function () {
             const datas = request.response;
-            console.log(datas);
-        }
+            console.log(location.host);
 
+            datas.forEach((element) => {
+                let node = document.createElement("button");
+                node.textContent = element["name"];
+                node.setAttribute(
+                    "class",
+                    "bg-green-500 h-16 w-full shadow-md rounded-2xl text-3xl"
+                );
+                node.addEventListener("click", () => {
+                    // change the source by clicking
+                    player.src({ type: 'application/x-mpegURL', src: "http://192.168.1.103:5000/videos/" + element["name"] })
+                });
+                boxes.appendChild(node);
+            });
 
+            if (!datas.length) {
+                // if list is empty
+                let node = document.createElement("div");
+                node.setAttribute(
+                    "class",
+                    "bg-blue-500 h-16 w-full shadow-md rounded-2xl grid grid-cols=1 place-items-center text-3xl"
+                );
+                node.textContent = "NO VIDEO FOUND";
+                boxes.appendChild(node);
+            }
+        };
     </script>
 </body>
 
