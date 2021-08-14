@@ -125,7 +125,7 @@ async def update():
                 print(f"{output_path} existed, Not process!")
                 continue
 
-            v_input = ffmpeg.input(abs_path)
+            v_input = ffmpeg.input(abs_path, init_hw_device="qsv=hw")
             video = v_input.video
             vcodec = "copy"
             acodec = "copy"
@@ -138,25 +138,41 @@ async def update():
             # if subtitle is built-in
             # embedded subtitle into video
             # must transcode
-            if m_subtitle:
-                video = ffmpeg.filter(video, "subtitles", filename=abs_path)
-                vcodec = "h264"
-
-            output = ffmpeg.output(
-                video,
-                audio,
-                output_path,
-                f="hls",
-                hls_segment_filename=os.path.join(
-                    OUTPUT_DIRECTORY, f"{video_name}_%04d.ts"
-                ),
-                hls_time=4,
-                hls_playlist_type="event",
-                vcodec=vcodec,
-                acodec=acodec,
-                audio_bitrate="200k",
-                ac=2,
-            )
+            if len(m_subtitle) > 0:
+                vcodec = "h264_qsv"
+                output = ffmpeg.output(
+                    video,
+                    audio,
+                    output_path,
+                    f="hls",
+                    hls_segment_filename=os.path.join(
+                        OUTPUT_DIRECTORY, f"{video_name}_%04d.ts"
+                    ),
+                    hls_time=6,
+                    hls_playlist_type="event",
+                    vf=f"subtitles={abs_path},hwupload=extra_hw_frames=64,format=qsv",
+                    vcodec=vcodec,
+                    acodec=acodec,
+                    q=20,
+                    audio_bitrate="128k",
+                    ac=2,
+                )
+            else:
+                output = ffmpeg.output(
+                    video,
+                    audio,
+                    output_path,
+                    f="hls",
+                    hls_segment_filename=os.path.join(
+                        OUTPUT_DIRECTORY, f"{video_name}_%04d.ts"
+                    ),
+                    hls_time=6,
+                    hls_playlist_type="event",
+                    vcodec=vcodec,
+                    acodec=acodec,
+                    audio_bitrate="128k",
+                    ac=2,
+                )
 
             key = random.getrandbits(32)
 
