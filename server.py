@@ -196,16 +196,15 @@ async def update():
                 )
 
             key = random.getrandbits(32)
-
             r.hset(key, mapping={"name": f'{"".join(video_name)}.m8u3', "state": 1})
 
             try:
                 ffmpeg.run(output)
+                r.hset(key, mapping={"name": f'{"".join(video_name)}.m8u3', "state": 2})
             except ffmpeg._run.Error as e:
                 print(f"Error Message -> {e.stdout}")
                 print(f"{video_name} unable to process due to certain error")
-
-            r.hset(key, mapping={"name": f'{"".join(video_name)}.m8u3', "state": 2})
+                r.hdel(key, ["name", "state"])
 
     asyncio.get_running_loop().run_in_executor(None, synchronous)
 
