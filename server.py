@@ -95,6 +95,22 @@ def split_parts_probe(path):
     return video, audio, subtitle
 
 
+def rename_file_if(path: str):
+    # if the file contain space
+    if " " in path:
+        # replace space with underscore
+        new_path = path.replace(" ", "_")
+
+        try:
+            os.rename(path, new_path)
+        except NotImplementedError:
+            print("Renaming file unsupported contact programmer.")
+
+        return new_path
+
+    return path
+
+
 # command to update all videos
 @app.route("/update")
 async def update():
@@ -107,7 +123,7 @@ async def update():
             items += glob.glob(f"{DIRECTORY}/**/*.{container}", recursive=True)
 
         for item in items:
-            abs_path = item
+            abs_path = rename_file_if(item)
             rel_path = abs_path.split("/")[-1]
 
             m_video, m_audio, m_subtitle = split_parts_probe(abs_path)
@@ -138,7 +154,7 @@ async def update():
             # if subtitle is built-in
             # embedded subtitle into video
             # must transcode
-            if len(m_subtitle) > 0:
+            if len(m_subtitle):
                 vcodec = "h264_qsv"
                 output = ffmpeg.output(
                     video,
@@ -177,7 +193,13 @@ async def update():
             key = random.getrandbits(32)
 
             r.hset(key, mapping={"name": f'{"".join(video_name)}.m8u3', "state": 1})
-            ffmpeg.run(output)
+
+            try:
+                ffmpeg.run(output)
+            except ffmpeg._run.Error as e:
+                print(f"Error Message -> {e.stdout}")
+                print(f"{video_name} unable to process due to certain error")
+
             r.hset(key, mapping={"name": f'{"".join(video_name)}.m8u3', "state": 2})
 
     asyncio.get_running_loop().run_in_executor(None, synchronous)
