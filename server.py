@@ -3,6 +3,7 @@ import os
 import glob
 import random
 import sys
+import re
 
 import aioredis
 import ffmpeg
@@ -96,11 +97,11 @@ def split_parts_probe(path):
 
 
 def rename_file_if(path: str):
-    # if the file contain space
-    if " " in path:
-        # replace space with underscore
-        new_path = path.replace(" ", "_")
+    # perform substitution if contain -> []whitespace
+    new_path = re.sub(r"[\[\]]|\s", "_", path)
 
+    # if the file contain space
+    if new_path != path:
         try:
             os.rename(path, new_path)
         except NotImplementedError:
@@ -126,16 +127,18 @@ async def update():
             abs_path = rename_file_if(item)
             rel_path = abs_path.split("/")[-1]
 
-            m_video, m_audio, m_subtitle = split_parts_probe(abs_path)
+            _, m_audio, m_subtitle = split_parts_probe(abs_path)
 
             # extract name of the video from rel_path
             video_name = "".join(rel_path.split(".")[:-1])
             # set path to videos/something.m8u3
             output_path = os.path.join(OUTPUT_DIRECTORY, f"{video_name}.m8u3")
 
+            debug = {}
             # print("debug path")
             # for line in [rel_path, abs_path, output_path]:
             #     print(line)
+            # debug = {"ss": 0, "t": 120}
 
             if os.path.exists(output_path):
                 print(f"{output_path} existed, Not process!")
@@ -172,6 +175,7 @@ async def update():
                     q=20,
                     audio_bitrate="128k",
                     ac=2,
+                    **debug,
                 )
             else:
                 output = ffmpeg.output(
@@ -188,6 +192,7 @@ async def update():
                     acodec=acodec,
                     audio_bitrate="128k",
                     ac=2,
+                    **debug,
                 )
 
             key = random.getrandbits(32)
