@@ -27,8 +27,6 @@ except KeyError as e:
 # route for main screen
 @app.route("/")
 async def index():
-    route
-
     return await render_template("index.html")
 
 
