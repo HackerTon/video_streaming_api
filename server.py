@@ -27,6 +27,8 @@ except KeyError as e:
 # route for main screen
 @app.route("/")
 async def index():
+    route
+
     return await render_template("index.html")
 
 
@@ -98,7 +100,7 @@ def split_parts_probe(path):
 
 def rename_file_if(path: str):
     # perform substitution if contain -> []whitespace
-    new_path = re.sub(r"[\[\]]|\s", "_", path)
+    new_path = re.sub(r"[\[\],]|\s", "_", path)
 
     # if the file contain space
     if new_path != path:
