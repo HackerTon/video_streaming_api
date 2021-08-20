@@ -1,35 +1,61 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <link rel="icon" href="data:," />
+    <!-- <meta http-equiv="refresh" content="2" /> -->
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link href="https://vjs.zencdn.net/7.11.4/video-js.css" rel="stylesheet" />
+    <link
+      href="https://unpkg.com/@videojs/themes@1/dist/city/index.css"
+      rel="stylesheet"
+    />
     <link href="http://192.168.1.103:5000/tailwind.css" rel="stylesheet" />
   </head>
 
   <body>
-    <div
-      class="
-        flex flex-col
-        md:flex-row
-        items-center
-        space-y-5
-        md:space-y-0 md:pr-10
-        pt-14
-        pb-10
-      "
-    >
-      <div class="md:pl-5 self-start w-full h-full md:pr-20">
-        <video id="video" class="video-js" preload="auto" controls>
+    <!-- main body -->
+    <div class="grid md:grid-cols-4 place-items-center md:place-items-start p-5 gap-5 bg-gradient-to-r from-green-400 to-blue-500 min-h-screen">
+      <!-- video frame -->
+      <div class="!w-full md:col-span-3 border-b-2 border-gray-300 pb-1.5 md:border-0">
+        <video
+          id="video"
+          class="
+            video-js
+            vjs-theme-city
+            fullhd
+            !w-full
+            h-auto
+            !rounded-lg
+            overflow-hidden
+          "
+          preload="auto"
+          controls
+        >
           <source
             type="application/x-mpegURL"
             src="http://192.168.1.103:5000/videos/2021-07-28_20-22-23.m8u3"
           />
         </video>
-        <div id="title" class="pl-2 text-lg font-bold">Choose a video</div>
+        <!-- video title -->
+        <div
+          id="title"
+          class="
+            pt-4
+            font-semibold
+            text-xl
+            pl-0.5
+            overflow-hidden
+            w-[85vw]
+            md:w-full
+          "
+        >
+          Choose a video
+        </div>
       </div>
+      <!-- video selection list -->
       <div
         id="selection"
-        class="grid grid-cols-1 place-items-center gap-5 max-w-full px-5"
+        class="z-0 grid grid-cols-1 gap-7 md:pt-0 w-full relative"
       ></div>
     </div>
 
@@ -37,7 +63,7 @@
     <script src="https://unpkg.com/@videojs/http-streaming/dist/videojs-http-streaming.js"></script>
     <script src="https://ajax.googleapis.com/ajax/libs/cesiumjs/1.78/Build/Cesium/Cesium.js"></script>
     <script>
-      let player = videojs("video", { liveui: true, fluid: true });
+      let player = videojs("video", { liveui: true, fluid: false });
       let boxes = document.getElementById("selection");
       let title = document.getElementById("title");
 
@@ -55,7 +81,7 @@
           node.textContent = element["name"];
           node.setAttribute(
             "class",
-            "bg-green-500 min-w-full shadow-sm rounded-xs overflow-hidden overflow-clip h-16"
+            "bg-white shadow-md rounded-lg overflow-hidden h-16"
           );
           node.addEventListener("click", () => {
             // change the source by clicking

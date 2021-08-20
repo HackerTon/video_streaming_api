@@ -40,7 +40,7 @@ async def css():
 async def path(path):
     file_path = os.path.join(OUTPUT_DIRECTORY, path)
 
-    return await send_file(file_path, mimetype="application/x-mpegurl", cache_timeout=1)
+    return await send_file(file_path, mimetype="application/x-mpegurl")
 
 
 # route for all keys
@@ -81,7 +81,6 @@ async def play(id):
         "/home/hackerton/Videos/2021-07-28_20-22-23/2021-07-28_20-22-23.m3u8",
         mimetype="application/x-mpegURL",
         as_attachment=False,
-        cache_timeout=1,
     )
 
 
@@ -199,12 +198,13 @@ async def update():
             r.hset(key, mapping={"name": f'{"".join(video_name)}.m8u3', "state": 1})
 
             try:
+                output = output.global_args("-hide_banner")
                 ffmpeg.run(output)
                 r.hset(key, mapping={"name": f'{"".join(video_name)}.m8u3', "state": 2})
             except ffmpeg._run.Error as e:
                 print(f"Error Message -> {e.stdout}")
                 print(f"{video_name} unable to process due to certain error")
-                r.hdel(key, ["name", "state"])
+                r.hdel(key, "name", "state")
 
     asyncio.get_running_loop().run_in_executor(None, synchronous)
 

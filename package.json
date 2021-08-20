@@ -1,5 +1,11 @@
 {
+  "scripts": {
+    "build": "postcss templates/styles.css -o templates/tailwind.css",
+    "dev": "TAILWIND_MODE=watch postcss templates/styles.css -o templates/tailwind.css --watch --jit"
+  },
   "dependencies": {
+    "autoprefixer": "^10.3.1",
+    "postcss-cli": "^8.3.1",
     "tailwindcss": "^2.2.7"
   }
 }
