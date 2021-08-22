@@ -101,6 +101,13 @@ def rename_file_if(path: str):
 async def update():
     def synchronous():
         r = redis.Redis(decode_responses=True)
+
+        # only allow on one synchronous operation to run
+        if r.hget("system", "status") == "1":
+            return
+
+        r.hset("system", mapping={"status": 1})
+
         supported = ["mkv", "mp4"]
         videos = []
 
@@ -137,11 +144,8 @@ async def update():
             video = v_input.video
             vcodec = "copy"
             acodec = "copy"
-
             audio = v_input["a:0"]
-
-            if m_audio[0]["codec_name"] != "aac":
-                acodec = "aac"
+            p_state = -1
 
             # if subtitle is built-in
             # embedded subtitle into video
@@ -157,45 +161,63 @@ async def update():
                         break
 
                 if stream_idx:
-                    video = video.filter("subtitles", f"{abs_path}", si=stream_idx)
-                    video = video.filter("hwupload", extra_hw_frames=64)
-                    video = video.filter("format", "qsv")
-                    vcodec = "h264_qsv"
-                    output = ffmpeg.output(
-                        video,
-                        audio,
-                        output_path,
-                        f="hls",
-                        hls_segment_filename=os.path.join(
-                            OUTPUT_DIRECTORY, f"{video_name}_%04d.ts"
-                        ),
-                        hls_time=6,
-                        hls_playlist_type="event",
-                        vcodec=vcodec,
-                        acodec=acodec,
-                        q=20,
-                        audio_bitrate="128k",
-                        ac=2,
-                        **debug,
-                    )
+                    p_state = 0
 
-                else:
-                    output = ffmpeg.output(
-                        video,
-                        audio,
-                        output_path,
-                        f="hls",
-                        hls_segment_filename=os.path.join(
-                            OUTPUT_DIRECTORY, f"{video_name}_%04d.ts"
-                        ),
-                        hls_time=6,
-                        hls_playlist_type="event",
-                        vcodec=vcodec,
-                        acodec=acodec,
-                        audio_bitrate="128k",
-                        ac=2,
-                        **debug,
-                    )
+            # set vcodec to h264 if not h264
+            if m_video[0]["codec_name"] != "h264":
+                p_state = 2
+
+            # set codec to acc if not acc
+            if m_audio[0]["codec_name"] != "aac":
+                acodec = "aac"
+
+            # p_state == 0; transcode with subtitles
+            # p_state == 1; transcode audio only
+            # p_state == 2; transcode video to h264
+            # else direct copy video and audio
+
+            if p_state == 0:
+                video = video.filter("subtitles", f"{abs_path}", si=stream_idx)
+                video = video.filter("hwupload", extra_hw_frames=64)
+                video = video.filter("format", "qsv")
+                vcodec = "h264_qsv"
+                output = ffmpeg.output(
+                    video,
+                    audio,
+                    output_path,
+                    f="hls",
+                    hls_segment_filename=os.path.join(
+                        OUTPUT_DIRECTORY, f"{video_name}_%04d.ts"
+                    ),
+                    hls_time=6,
+                    hls_playlist_type="event",
+                    vcodec=vcodec,
+                    acodec=acodec,
+                    q=20,
+                    audio_bitrate="128k",
+                    ac=2,
+                    **debug,
+                )
+            elif p_state == 2:
+                vcodec = "h264"
+                output = ffmpeg.output(
+                    video,
+                    audio,
+                    output_path,
+                    f="hls",
+                    hls_segment_filename=os.path.join(
+                        OUTPUT_DIRECTORY, f"{video_name}_%04d.ts"
+                    ),
+                    hls_time=6,
+                    hls_playlist_type="event",
+                    preset="veryfast",
+                    vcodec=vcodec,
+                    acodec=acodec,
+                    q=20,
+                    audio_bitrate="128k",
+                    ac=2,
+                    **debug,
+                )
             else:
                 output = ffmpeg.output(
                     video,
@@ -215,7 +237,6 @@ async def update():
                 )
 
             key = random.getrandbits(32)
-
             # add into movie list
             r.hset("movie", key, f'{"".join(video_name)}.m8u3')
 
@@ -230,8 +251,9 @@ async def update():
             )
 
             try:
+                print(ffmpeg.compile(output))
                 output = output.global_args("-hide_banner")
-                ffmpeg.run(output, capture_stderr=True)
+                ffmpeg.run(output)
                 r.hset(key, mapping={"name": f'{"".join(video_name)}.m8u3', "state": 2})
             except ffmpeg.Error as e:
                 logging.error(f"Error Message -> {e.stderr}")
@@ -240,6 +262,8 @@ async def update():
                 # delete keys
                 r.hdel("movie", key)
                 r.hdel(key, "name", "state")
+
+        r.hset("system", mapping={"status": 0})
 
     asyncio.get_running_loop().run_in_executor(None, synchronous)
     return "we are updating all videos"
