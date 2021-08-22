@@ -1,9 +1,10 @@
 import asyncio
-import os
 import glob
+import os
 import random
-import sys
 import re
+import sys
+import logging
 
 import aioredis
 import ffmpeg
@@ -12,7 +13,6 @@ from quart import Quart, render_template, request, send_file
 from quart.json import jsonify
 
 app = Quart(__name__)
-app.clients = set()
 
 try:
     DIRECTORY = os.environ["DIRECTORY"] if os.environ["DIRECTORY"] else sys.exit()
@@ -21,6 +21,7 @@ try:
     )
 except KeyError as e:
     print("Set environment variable DIRECTORY & OUTPUT_DIR!")
+    logging.info("Set environment variable DIRECTORY & OUTPUT_DIR!")
     sys.exit()
 
 
@@ -30,9 +31,19 @@ async def index():
     return await render_template("index.html")
 
 
+@app.route("/sushibb")
+async def sushibb():
+    return await render_template()
+
+
 @app.route("/tailwind.css")
 async def css():
     return await send_file("templates/tailwind.css")
+
+
+@app.route("/script.js")
+async def script():
+    return await send_file("templates/script.js")
 
 
 # route for video segment path
@@ -47,41 +58,14 @@ async def path(path):
 @app.route("/list")
 async def list_all():
     tredis = aioredis.from_url("redis://localhost", decode_responses=True)
-    keys = await tredis.keys()
-    items = [await tredis.hgetall(key) for key in keys]
+    keys = await tredis.hgetall("movie")
+    items = [
+        await tredis.hgetall(key)
+        for key in keys
+        if await tredis.hget(key, "state") == "2"
+    ]
 
     return jsonify(items)
-
-
-# route to get the playlist
-@app.route("/play/<id>")
-async def play(id):
-    redis = aioredis.from_url("redis://localhost", decode_responses=True)
-
-    async with redis.client() as conn:
-        data = await conn.hgetall(str(id))
-        print(data)
-        # result = 0 if result[] == None else result[0]
-
-    # 0 = new not in server
-    # 1 = processing
-    # 2 = ready
-    if result == 0:
-        return "this is new"
-    elif result == 1:
-        return "please wait processing"
-    elif result == 2:
-        # ready file of the particular m3u8
-        pass
-    else:
-        raise Exception("internal server error")
-
-    # return the video playlist
-    return await send_file(
-        "/home/hackerton/Videos/2021-07-28_20-22-23/2021-07-28_20-22-23.m3u8",
-        mimetype="application/x-mpegURL",
-        as_attachment=False,
-    )
 
 
 def split_parts_probe(path):
@@ -105,6 +89,7 @@ def rename_file_if(path: str):
             os.rename(path, new_path)
         except NotImplementedError:
             print("Renaming file unsupported contact programmer.")
+            logging.info("Renaming file unsupported contact programmer.")
 
         return new_path
 
@@ -115,32 +100,37 @@ def rename_file_if(path: str):
 @app.route("/update")
 async def update():
     def synchronous():
-        r = redis.Redis()
+        r = redis.Redis(decode_responses=True)
         supported = ["mkv", "mp4"]
-        items = []
+        videos = []
 
         for container in supported:
-            items += glob.glob(f"{DIRECTORY}/**/*.{container}", recursive=True)
+            # file path of each video files
+            videos += glob.glob(f"{DIRECTORY}/**/*.{container}", recursive=True)
 
-        for item in items:
-            abs_path = rename_file_if(item)
+        for video in videos:
+            abs_path = rename_file_if(video)
             rel_path = abs_path.split("/")[-1]
 
-            _, m_audio, m_subtitle = split_parts_probe(abs_path)
+            try:
+                m_video, m_audio, m_subtitle = split_parts_probe(abs_path)
+            except ffmpeg.Error as e:
+                logging.error(f"Skip {abs_path}")
+                continue
 
             # extract name of the video from rel_path
             video_name = "".join(rel_path.split(".")[:-1])
-            # set path to videos/something.m8u3
+            # set output path to videos/something.m8u3
             output_path = os.path.join(OUTPUT_DIRECTORY, f"{video_name}.m8u3")
 
             debug = {}
             # print("debug path")
             # for line in [rel_path, abs_path, output_path]:
             #     print(line)
-            # debug = {"ss": 0, "t": 120}
+            debug = {"ss": 0, "t": 120}
 
             if os.path.exists(output_path):
-                print(f"{output_path} existed, Not process!")
+                logging.info(f"{output_path} exited, Not process!")
                 continue
 
             v_input = ffmpeg.input(abs_path, init_hw_device="qsv=hw")
@@ -157,25 +147,55 @@ async def update():
             # embedded subtitle into video
             # must transcode
             if len(m_subtitle):
-                vcodec = "h264_qsv"
-                output = ffmpeg.output(
-                    video,
-                    audio,
-                    output_path,
-                    f="hls",
-                    hls_segment_filename=os.path.join(
-                        OUTPUT_DIRECTORY, f"{video_name}_%04d.ts"
-                    ),
-                    hls_time=6,
-                    hls_playlist_type="event",
-                    vf=f"subtitles={abs_path},hwupload=extra_hw_frames=64,format=qsv",
-                    vcodec=vcodec,
-                    acodec=acodec,
-                    q=20,
-                    audio_bitrate="128k",
-                    ac=2,
-                    **debug,
-                )
+                stream_idx = None
+
+                # grab the subtitle stream that comes first
+                # means 1 is chosen instead of 2
+                for subtitle in m_subtitle:
+                    if subtitle["codec_name"] in ["srt", "ass"]:
+                        stream_idx = subtitle["index"]
+                        break
+
+                if stream_idx:
+                    video = video.filter("subtitles", f"{abs_path}", si=stream_idx)
+                    video = video.filter("hwupload", extra_hw_frames=64)
+                    video = video.filter("format", "qsv")
+                    vcodec = "h264_qsv"
+                    output = ffmpeg.output(
+                        video,
+                        audio,
+                        output_path,
+                        f="hls",
+                        hls_segment_filename=os.path.join(
+                            OUTPUT_DIRECTORY, f"{video_name}_%04d.ts"
+                        ),
+                        hls_time=6,
+                        hls_playlist_type="event",
+                        vcodec=vcodec,
+                        acodec=acodec,
+                        q=20,
+                        audio_bitrate="128k",
+                        ac=2,
+                        **debug,
+                    )
+
+                else:
+                    output = ffmpeg.output(
+                        video,
+                        audio,
+                        output_path,
+                        f="hls",
+                        hls_segment_filename=os.path.join(
+                            OUTPUT_DIRECTORY, f"{video_name}_%04d.ts"
+                        ),
+                        hls_time=6,
+                        hls_playlist_type="event",
+                        vcodec=vcodec,
+                        acodec=acodec,
+                        audio_bitrate="128k",
+                        ac=2,
+                        **debug,
+                    )
             else:
                 output = ffmpeg.output(
                     video,
@@ -195,19 +215,33 @@ async def update():
                 )
 
             key = random.getrandbits(32)
-            r.hset(key, mapping={"name": f'{"".join(video_name)}.m8u3', "state": 1})
+
+            # add into movie list
+            r.hset("movie", key, f'{"".join(video_name)}.m8u3')
+
+            # add to our hash
+            r.hset(
+                key,
+                mapping={
+                    "name": f'{"".join(video_name)}.m8u3',
+                    "state": 1,
+                    "description": "is a movie",
+                },
+            )
 
             try:
                 output = output.global_args("-hide_banner")
-                ffmpeg.run(output)
+                ffmpeg.run(output, capture_stderr=True)
                 r.hset(key, mapping={"name": f'{"".join(video_name)}.m8u3', "state": 2})
-            except ffmpeg._run.Error as e:
-                print(f"Error Message -> {e.stdout}")
-                print(f"{video_name} unable to process due to certain error")
+            except ffmpeg.Error as e:
+                logging.error(f"Error Message -> {e.stderr}")
+                logging.error(f"{video_name} unable to process due to certain error")
+
+                # delete keys
+                r.hdel("movie", key)
                 r.hdel(key, "name", "state")
 
     asyncio.get_running_loop().run_in_executor(None, synchronous)
-
     return "we are updating all videos"
 
 
@@ -230,4 +264,11 @@ async def debug():
 
 
 if __name__ == "__main__":
+    logging.basicConfig(
+        level=logging.INFO,
+        filename="transcoder.log",
+        filemode="w",
+        format="%(name)s - %(levelname)s - %(message)s",
+    )
+
     app.run("0.0.0.0")

@@ -1,0 +1,131 @@
+asyncio - INFO - <Server sockets=(<asyncio.TransportSocket fd=11, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('0.0.0.0', 5000)>,)> is serving
+quart.serving - INFO - Running on http://0.0.0.0:5000 (CTRL + C to quit)
+quart.serving - INFO - 192.168.1.103:32862 GET / 1.1 200 2200 6309
+quart.serving - INFO - 192.168.1.103:32864 GET /script.js 1.1 200 1766 28070
+quart.serving - INFO - 192.168.1.103:32862 GET /tailwind.css 1.1 200 13595 42731
+quart.serving - INFO - 192.168.1.103:32864 GET /list 1.1 200 408 20775
+quart.app - ERROR - Exception on request GET /videos/2021-07-28_20-22-23.m8u3
+Traceback (most recent call last):
+  File "/home/hackerton/miniconda3/envs/graphic/lib/python3.9/site-packages/quart/app.py", line 1467, in handle_request
+    return await self.full_dispatch_request(request_context)
+  File "/home/hackerton/miniconda3/envs/graphic/lib/python3.9/site-packages/quart/app.py", line 1492, in full_dispatch_request
+    result = await self.handle_user_exception(error)
+  File "/home/hackerton/miniconda3/envs/graphic/lib/python3.9/site-packages/quart/app.py", line 968, in handle_user_exception
+    raise error
+  File "/home/hackerton/miniconda3/envs/graphic/lib/python3.9/site-packages/quart/app.py", line 1490, in full_dispatch_request
+    result = await self.dispatch_request(request_context)
+  File "/home/hackerton/miniconda3/envs/graphic/lib/python3.9/site-packages/quart/app.py", line 1536, in dispatch_request
+    return await self.ensure_async(handler)(**request_.view_args)
+  File "/home/hackerton/Programs/videotranscoder/server.py", line 54, in path
+    return await send_file(file_path, mimetype="application/x-mpegurl")
+  File "/home/hackerton/miniconda3/envs/graphic/lib/python3.9/site-packages/quart/helpers.py", line 381, in send_file
+    file_size = file_path.stat().st_size
+  File "/home/hackerton/miniconda3/envs/graphic/lib/python3.9/pathlib.py", line 1221, in stat
+    return self._accessor.stat(self)
+FileNotFoundError: [Errno 2] No such file or directory: '/home/hackerton/Videos/process/2021-07-28_20-22-23.m8u3'
+quart.serving - INFO - 192.168.1.103:32864 GET /videos/2021-07-28_20-22-23.m8u3 1.1 500 41462 74734
+quart.serving - INFO - 192.168.1.103:33298 GET / 1.1 200 2200 3888
+quart.serving - INFO - 192.168.1.103:33300 GET /script.js 1.1 200 1766 10083
+quart.serving - INFO - 192.168.1.103:33298 GET /tailwind.css 1.1 200 13631 14011
+quart.serving - INFO - 192.168.1.103:33298 GET /list 1.1 200 408 18686
+quart.app - ERROR - Exception on request GET /videos/2021-07-28_20-22-23.m8u3
+Traceback (most recent call last):
+  File "/home/hackerton/miniconda3/envs/graphic/lib/python3.9/site-packages/quart/app.py", line 1467, in handle_request
+    return await self.full_dispatch_request(request_context)
+  File "/home/hackerton/miniconda3/envs/graphic/lib/python3.9/site-packages/quart/app.py", line 1492, in full_dispatch_request
+    result = await self.handle_user_exception(error)
+  File "/home/hackerton/miniconda3/envs/graphic/lib/python3.9/site-packages/quart/app.py", line 968, in handle_user_exception
+    raise error
+  File "/home/hackerton/miniconda3/envs/graphic/lib/python3.9/site-packages/quart/app.py", line 1490, in full_dispatch_request
+    result = await self.dispatch_request(request_context)
+  File "/home/hackerton/miniconda3/envs/graphic/lib/python3.9/site-packages/quart/app.py", line 1536, in dispatch_request
+    return await self.ensure_async(handler)(**request_.view_args)
+  File "/home/hackerton/Programs/videotranscoder/server.py", line 54, in path
+    return await send_file(file_path, mimetype="application/x-mpegurl")
+  File "/home/hackerton/miniconda3/envs/graphic/lib/python3.9/site-packages/quart/helpers.py", line 381, in send_file
+    file_size = file_path.stat().st_size
+  File "/home/hackerton/miniconda3/envs/graphic/lib/python3.9/pathlib.py", line 1221, in stat
+    return self._accessor.stat(self)
+FileNotFoundError: [Errno 2] No such file or directory: '/home/hackerton/Videos/process/2021-07-28_20-22-23.m8u3'
+quart.serving - INFO - 192.168.1.103:33298 GET /videos/2021-07-28_20-22-23.m8u3 1.1 500 41462 24647
+quart.serving - INFO - 192.168.1.103:34038 GET / 1.1 200 2200 1971
+quart.serving - INFO - 192.168.1.103:34040 GET /script.js 1.1 200 1766 15524
+quart.serving - INFO - 192.168.1.103:34038 GET /tailwind.css 1.1 200 13827 22184
+quart.serving - INFO - 192.168.1.103:34038 GET /list 1.1 200 408 21954
+quart.app - ERROR - Exception on request GET /videos/2021-07-28_20-22-23.m8u3
+Traceback (most recent call last):
+  File "/home/hackerton/miniconda3/envs/graphic/lib/python3.9/site-packages/quart/app.py", line 1467, in handle_request
+    return await self.full_dispatch_request(request_context)
+  File "/home/hackerton/miniconda3/envs/graphic/lib/python3.9/site-packages/quart/app.py", line 1492, in full_dispatch_request
+    result = await self.handle_user_exception(error)
+  File "/home/hackerton/miniconda3/envs/graphic/lib/python3.9/site-packages/quart/app.py", line 968, in handle_user_exception
+    raise error
+  File "/home/hackerton/miniconda3/envs/graphic/lib/python3.9/site-packages/quart/app.py", line 1490, in full_dispatch_request
+    result = await self.dispatch_request(request_context)
+  File "/home/hackerton/miniconda3/envs/graphic/lib/python3.9/site-packages/quart/app.py", line 1536, in dispatch_request
+    return await self.ensure_async(handler)(**request_.view_args)
+  File "/home/hackerton/Programs/videotranscoder/server.py", line 54, in path
+    return await send_file(file_path, mimetype="application/x-mpegurl")
+  File "/home/hackerton/miniconda3/envs/graphic/lib/python3.9/site-packages/quart/helpers.py", line 381, in send_file
+    file_size = file_path.stat().st_size
+  File "/home/hackerton/miniconda3/envs/graphic/lib/python3.9/pathlib.py", line 1221, in stat
+    return self._accessor.stat(self)
+FileNotFoundError: [Errno 2] No such file or directory: '/home/hackerton/Videos/process/2021-07-28_20-22-23.m8u3'
+quart.serving - INFO - 192.168.1.103:34038 GET /videos/2021-07-28_20-22-23.m8u3 1.1 500 41462 29476
+quart.serving - INFO - 192.168.1.103:34156 GET / 1.1 200 2200 3180
+quart.serving - INFO - 192.168.1.103:34156 GET /tailwind.css 1.1 200 13909 15456
+quart.serving - INFO - 192.168.1.103:34158 GET /script.js 1.1 200 1775 14414
+quart.serving - INFO - 192.168.1.103:34158 GET /list 1.1 200 408 22788
+quart.app - ERROR - Exception on request GET /videos/2021-07-28_20-22-23.m8u3
+Traceback (most recent call last):
+  File "/home/hackerton/miniconda3/envs/graphic/lib/python3.9/site-packages/quart/app.py", line 1467, in handle_request
+    return await self.full_dispatch_request(request_context)
+  File "/home/hackerton/miniconda3/envs/graphic/lib/python3.9/site-packages/quart/app.py", line 1492, in full_dispatch_request
+    result = await self.handle_user_exception(error)
+  File "/home/hackerton/miniconda3/envs/graphic/lib/python3.9/site-packages/quart/app.py", line 968, in handle_user_exception
+    raise error
+  File "/home/hackerton/miniconda3/envs/graphic/lib/python3.9/site-packages/quart/app.py", line 1490, in full_dispatch_request
+    result = await self.dispatch_request(request_context)
+  File "/home/hackerton/miniconda3/envs/graphic/lib/python3.9/site-packages/quart/app.py", line 1536, in dispatch_request
+    return await self.ensure_async(handler)(**request_.view_args)
+  File "/home/hackerton/Programs/videotranscoder/server.py", line 54, in path
+    return await send_file(file_path, mimetype="application/x-mpegurl")
+  File "/home/hackerton/miniconda3/envs/graphic/lib/python3.9/site-packages/quart/helpers.py", line 381, in send_file
+    file_size = file_path.stat().st_size
+  File "/home/hackerton/miniconda3/envs/graphic/lib/python3.9/pathlib.py", line 1221, in stat
+    return self._accessor.stat(self)
+FileNotFoundError: [Errno 2] No such file or directory: '/home/hackerton/Videos/process/2021-07-28_20-22-23.m8u3'
+quart.serving - INFO - 192.168.1.103:34158 GET /videos/2021-07-28_20-22-23.m8u3 1.1 500 41462 38727
+quart.serving - INFO - 192.168.1.103:34240 GET / 1.1 200 2200 5811
+quart.serving - INFO - 192.168.1.103:34240 GET /list 1.1 200 408 9545
+quart.app - ERROR - Exception on request GET /videos/2021-07-28_20-22-23.m8u3
+Traceback (most recent call last):
+  File "/home/hackerton/miniconda3/envs/graphic/lib/python3.9/site-packages/quart/app.py", line 1467, in handle_request
+    return await self.full_dispatch_request(request_context)
+  File "/home/hackerton/miniconda3/envs/graphic/lib/python3.9/site-packages/quart/app.py", line 1492, in full_dispatch_request
+    result = await self.handle_user_exception(error)
+  File "/home/hackerton/miniconda3/envs/graphic/lib/python3.9/site-packages/quart/app.py", line 968, in handle_user_exception
+    raise error
+  File "/home/hackerton/miniconda3/envs/graphic/lib/python3.9/site-packages/quart/app.py", line 1490, in full_dispatch_request
+    result = await self.dispatch_request(request_context)
+  File "/home/hackerton/miniconda3/envs/graphic/lib/python3.9/site-packages/quart/app.py", line 1536, in dispatch_request
+    return await self.ensure_async(handler)(**request_.view_args)
+  File "/home/hackerton/Programs/videotranscoder/server.py", line 54, in path
+    return await send_file(file_path, mimetype="application/x-mpegurl")
+  File "/home/hackerton/miniconda3/envs/graphic/lib/python3.9/site-packages/quart/helpers.py", line 381, in send_file
+    file_size = file_path.stat().st_size
+  File "/home/hackerton/miniconda3/envs/graphic/lib/python3.9/pathlib.py", line 1221, in stat
+    return self._accessor.stat(self)
+FileNotFoundError: [Errno 2] No such file or directory: '/home/hackerton/Videos/process/2021-07-28_20-22-23.m8u3'
+quart.serving - INFO - 192.168.1.103:34240 GET /videos/2021-07-28_20-22-23.m8u3 1.1 500 41462 32509
+quart.serving - INFO - 192.168.1.103:34248 GET /videos/StarTrekIntoDarkness20132160pUHDBluRayx265-TERMiNAL.m8u3 1.1 200 1675 7349
+quart.serving - INFO - 192.168.1.103:34248 GET /videos/StarTrekIntoDarkness20132160pUHDBluRayx265-TERMiNAL_0000.ts 1.1 200 5337508 523073
+quart.serving - INFO - 192.168.1.103:34248 GET /favicon.ico 1.1 404 232 5544
+quart.serving - INFO - 192.168.1.103:34250 GET /videos/StarTrekIntoDarkness20132160pUHDBluRayx265-TERMiNAL_0001.ts 1.1 200 10675204 1157410
+quart.serving - INFO - 192.168.1.103:34250 GET /videos/StarTrekIntoDarkness20132160pUHDBluRayx265-TERMiNAL_0002.ts 1.1 200 7642200 865241
+quart.serving - INFO - 192.168.1.103:34250 GET /videos/StarTrekIntoDarkness20132160pUHDBluRayx265-TERMiNAL_0003.ts 1.1 200 4791744 583265
+quart.serving - INFO - 192.168.1.103:34250 GET /videos/StarTrekIntoDarkness20132160pUHDBluRayx265-TERMiNAL_0004.ts 1.1 200 12210788 1225318
+quart.serving - INFO - 192.168.1.103:34250 GET /videos/StarTrekIntoDarkness20132160pUHDBluRayx265-TERMiNAL_0005.ts 1.1 200 11057784 1106626
+quart.serving - INFO - 192.168.1.103:34250 GET /videos/StarTrekIntoDarkness20132160pUHDBluRayx265-TERMiNAL_0006.ts 1.1 200 6270364 654773
+quart.serving - INFO - 192.168.1.103:34250 GET /videos/StarTrekIntoDarkness20132160pUHDBluRayx265-TERMiNAL_0007.ts 1.1 200 7188368 660401
+quart.serving - INFO - 192.168.1.103:34250 GET /videos/StarTrekIntoDarkness20132160pUHDBluRayx265-TERMiNAL_0008.ts 1.1 200 2994088 290000
