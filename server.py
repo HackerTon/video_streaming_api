@@ -193,13 +193,15 @@ async def update():
                     hls_playlist_type="event",
                     vcodec=vcodec,
                     acodec=acodec,
-                    q=20,
+                    global_quality=20,
                     audio_bitrate="128k",
                     ac=2,
                     **debug,
                 )
             elif p_state == 2:
-                vcodec = "h264"
+                video = video.filter("hwupload", extra_hw_frames=64)
+                video = video.filter("scale_qsv", w=1920, h=1080, format="nv12")
+                vcodec = "h264_qsv"
                 output = ffmpeg.output(
                     video,
                     audio,
@@ -213,7 +215,7 @@ async def update():
                     preset="veryfast",
                     vcodec=vcodec,
                     acodec=acodec,
-                    q=20,
+                    global_quality=20,
                     audio_bitrate="128k",
                     ac=2,
                     **debug,
@@ -251,8 +253,8 @@ async def update():
             )
 
             try:
-                print(ffmpeg.compile(output))
                 output = output.global_args("-hide_banner")
+                print(ffmpeg.compile(output))
                 ffmpeg.run(output)
                 r.hset(key, mapping={"name": f'{"".join(video_name)}.m8u3', "state": 2})
             except ffmpeg.Error as e:

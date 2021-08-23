@@ -27,8 +27,7 @@ request.onload = function () {
     titleChildNode.textContent = element["name"];
     descChildNode.className = "text-gray-700 font-mono text-base";
     descChildNode.textContent = element["description"];
-    node.className =
-      "bg-white shadow-md rounded-lg overflow-hidden h-20 pl-10 md:pl-5 text-left";
+    node.className = "box";
 
     node.appendChild(titleChildNode);
     node.appendChild(descChildNode);
@@ -39,7 +38,7 @@ request.onload = function () {
 
       player.src({
         type: "application/x-mpegURL",
-        src: "http://192.168.1.103:5000/videos/" + element["name"],
+        src: "/videos/" + element["name"],
       });
     });
     boxes.appendChild(node);
