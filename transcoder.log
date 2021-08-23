@@ -1,2 +1,0 @@
-asyncio - INFO - <Server sockets=(<asyncio.TransportSocket fd=11, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('0.0.0.0', 5000)>,)> is serving
-quart.serving - INFO - Running on http://0.0.0.0:5000 (CTRL + C to quit)
