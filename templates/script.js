@@ -10,13 +10,12 @@ let boxes = document.getElementById("selection");
 let title = document.getElementById("title");
 
 let request = new XMLHttpRequest();
-request.open("GET", "/list");
+request.open("GET", "http://localhost:5000/list");
 request.responseType = "json";
 request.send();
 
 request.onload = function () {
   const datas = request.response;
-  console.log(location.host);
 
   datas.forEach((element) => {
     let node = document.createElement("button");
@@ -34,7 +33,7 @@ request.onload = function () {
 
     node.addEventListener("click", () => {
       // change the source by clicking
-      title.textContent = node.textContent;
+      title.textContent = element["name"];
 
       player.src({
         type: "application/x-mpegURL",

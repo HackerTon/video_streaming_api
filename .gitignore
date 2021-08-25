@@ -3,3 +3,4 @@ node_modules
 transcoder.log
 *.log
 __pycache__*
+.vscode/

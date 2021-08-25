@@ -9,7 +9,7 @@
 }
 
 .video-title {
-  @apply pt-4
+  @apply pt-2
   font-semibold
   text-xl
   pl-0.5
@@ -18,8 +18,23 @@
   md:w-full;
 }
 
+.main-body {
+  @apply grid
+  md:grid-cols-4
+  place-items-center
+  md:place-items-start
+  p-4
+  gap-0
+  md:gap-10
+  bg-yellow-300
+  min-h-screen;
+}
+
 .box {
-  @apply bg-white shadow-md rounded-lg overflow-hidden h-20 pl-10 md:pl-5 text-left;
+  @apply bg-white shadow-md
+  rounded-lg overflow-hidden
+  h-20 pl-10 md:pl-5 text-left
+  hover:-translate-y-1 transition active:bg-gray-400 hover:ring hover:ring-pink-600;
 }
 
 ::-webkit-scrollbar {

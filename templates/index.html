@@ -3,40 +3,32 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link href="https://vjs.zencdn.net/7.11.4/video-js.css" rel="stylesheet" />
-    <link
-      href="https://unpkg.com/@videojs/themes@1/dist/city/index.css"
-      rel="stylesheet"
-    />
+    <link href="/video-js.css" rel="stylesheet" />
+    <link href="/index.css" rel="stylesheet" />
     <link href="/tailwind.css" rel="stylesheet" />
   </head>
 
   <body>
-    <!-- main body -->
     <div
       class="
-        grid
-        md:grid-cols-4
-        place-items-center
-        md:place-items-start
-        p-5
-        gap-5
-        bg-gradient-to-r
-        from-green-400
-        to-blue-500
-        min-h-screen
+        absolute
+        top-[2.5px]
+        left-0
+        h-15
+        text-2xl
+        font-mono
+        text-black
+        md:hidden
+        overflow-hidden
+        w-screen
       "
     >
+      <div class="animate-wiggle">Welcome to Transcoder</div>
+    </div>
+    <!-- main body -->
+    <div class="main-body">
       <!-- video frame -->
-      <div
-        class="
-          !w-full
-          md:col-span-3
-          border-b-2 border-gray-300
-          pb-1.5
-          md:border-0
-        "
-      >
+      <div class="!w-full md:col-span-3 pb-1.5 md:border-0">
         <video
           id="video"
           class="
@@ -47,6 +39,7 @@
             h-auto
             !rounded-lg
             overflow-hidden
+            shadow-md
           "
           preload="auto"
           controls
