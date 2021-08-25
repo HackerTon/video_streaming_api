@@ -1,0 +1,39 @@
+services:
+  python:
+    container_name: mypython
+    build:
+      context: .
+      dockerfile: Dockerfile_python
+    ports:
+      - "8080:80"
+      - "5000:5000"
+    environment:
+      - OUTPUT_DIR=/process/videos
+      - DIRECTORY=/directory
+    volumes:
+      - myredis:/data
+      - ~/Videos/process:/process/videos
+      - ~/test:/directory
+    devices:
+      - /dev/dri/renderD128:/dev/dri/renderD128
+  # nginx:
+  #   container_name: mynginx
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile_nginx
+  #   ports:
+  #     - "8080:80"
+  #   volumes:
+  #     - ./templates:/usr/share/nginx/html
+  #     - ~/Videos/process:/usr/share/nginx/videos
+  redis:
+    container_name: myredis
+    image: redis
+    command: redis-server --appendonly yes
+    restart: unless-stopped
+networks:
+  default:
+    external: true
+    name: my-net
+volumes:
+  myredis:

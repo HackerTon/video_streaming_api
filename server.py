@@ -10,9 +10,11 @@ import aioredis
 import ffmpeg
 import redis
 from quart import Quart, render_template, request, send_file
+from quart_cors import cors
 from quart.json import jsonify
 
 app = Quart(__name__)
+app = cors(app)
 
 try:
     DIRECTORY = os.environ["DIRECTORY"] if os.environ["DIRECTORY"] else sys.exit()
@@ -26,38 +28,36 @@ except KeyError as e:
 
 
 # route for main screen
-@app.route("/")
-async def index():
-    return await render_template("index.html")
+# @app.route("/")
+# async def index():
+#     return await render_template("index.html")
+
+# @app.route("/tailwind.css")
+# async def css():
+#     return await send_file("templates/tailwind.css", cache_timeout=0)
 
 
-@app.route("/sushibb")
-async def sushibb():
-    return await render_template()
-
-
-@app.route("/tailwind.css")
-async def css():
-    return await send_file("templates/tailwind.css")
-
-
-@app.route("/script.js")
-async def script():
-    return await send_file("templates/script.js")
+# @app.route("/script.js")
+# async def script():
+#     return await send_file("templates/script.js", cache_timeout=0)
 
 
 # route for video segment path
-@app.route("/videos/<path>")
-async def path(path):
-    file_path = os.path.join(OUTPUT_DIRECTORY, path)
+# @app.route("/videos/<path>")
+# async def path(path):
+#     file_path = os.path.join(OUTPUT_DIRECTORY, path)
+#     return await send_file(file_path, mimetype="application/x-mpegurl")
 
-    return await send_file(file_path, mimetype="application/x-mpegurl")
+
+# @app.route("/sushibb")
+# async def sushibb():
+#     return await render_template()
 
 
 # route for all keys
 @app.route("/list")
 async def list_all():
-    tredis = aioredis.from_url("redis://localhost", decode_responses=True)
+    tredis = aioredis.from_url("redis://myredis", decode_responses=True)
     keys = await tredis.hgetall("movie")
     items = [
         await tredis.hgetall(key)
@@ -100,7 +100,7 @@ def rename_file_if(path: str):
 @app.route("/update")
 async def update():
     def synchronous():
-        r = redis.Redis(decode_responses=True)
+        r = redis.Redis(host="myredis", port=6379, decode_responses=True)
 
         # only allow on one synchronous operation to run
         if r.hget("system", "status") == "1":

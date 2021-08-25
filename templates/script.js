@@ -10,7 +10,7 @@ let boxes = document.getElementById("selection");
 let title = document.getElementById("title");
 
 let request = new XMLHttpRequest();
-request.open("GET", "http://192.168.1.103:5000/list");
+request.open("GET", "/list");
 request.responseType = "json";
 request.send();
 

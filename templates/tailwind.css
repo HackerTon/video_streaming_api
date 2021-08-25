@@ -565,6 +565,9 @@ video {
 .relative {
 	position: relative;
 }
+.z-0 {
+	z-index: 0;
+}
 .grid {
 	display: grid;
 }
@@ -582,6 +585,9 @@ video {
 }
 .w-full {
 	width: 100%;
+}
+.w-\[85vw\] {
+	width: 85vw;
 }
 .grid-cols-1 {
 	grid-template-columns: repeat(1, minmax(0, 1fr));
@@ -634,8 +640,21 @@ video {
 .pb-1 {
 	padding-bottom: 0.25rem;
 }
+.pt-4 {
+	padding-top: 1rem;
+}
+.pl-0\.5 {
+	padding-left: 0.125rem;
+}
+.pl-0 {
+	padding-left: 0px;
+}
 .font-mono {
 	font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
+.text-xl {
+	font-size: 1.25rem;
+	line-height: 1.75rem;
 }
 .text-lg {
 	font-size: 1.125rem;
@@ -648,6 +667,9 @@ video {
 .text-3xl {
 	font-size: 1.875rem;
 	line-height: 2.25rem;
+}
+.font-semibold {
+	font-weight: 600;
 }
 .font-bold {
 	font-weight: 700;
@@ -746,6 +768,10 @@ video {
 
 	.md\:col-span-3 {
 		grid-column: span 3 / span 3;
+	}
+
+	.md\:w-full {
+		width: 100%;
 	}
 
 	.md\:grid-cols-4 {

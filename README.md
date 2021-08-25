@@ -1,5 +1,12 @@
 # Video Transcoding Server
 
-1. ## Instruction
-   1. `Set environment variable for DIRECTORY & OUTPUT_DIR`
-   2. `python server.py`
+## Dependencies
+
+1. `docker`
+2. `docker-compose`
+
+## Instruction
+
+1. `docker-compose up --build --detach`
+
+![picture of the working system](imgs/screenshot.png)
