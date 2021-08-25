@@ -1,9 +1,7 @@
 services:
   python:
     container_name: mypython
-    build:
-      context: .
-      dockerfile: Dockerfile_python
+    build: .
     ports:
       - "8080:80"
       - "5000:5000"
@@ -16,16 +14,6 @@ services:
       - ~/test:/directory
     devices:
       - /dev/dri/renderD128:/dev/dri/renderD128
-  # nginx:
-  #   container_name: mynginx
-  #   build:
-  #     context: .
-  #     dockerfile: Dockerfile_nginx
-  #   ports:
-  #     - "8080:80"
-  #   volumes:
-  #     - ./templates:/usr/share/nginx/html
-  #     - ~/Videos/process:/usr/share/nginx/videos
   redis:
     container_name: myredis
     image: redis
