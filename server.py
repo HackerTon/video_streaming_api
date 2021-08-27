@@ -27,33 +27,6 @@ except KeyError as e:
     sys.exit()
 
 
-# route for main screen
-# @app.route("/")
-# async def index():
-#     return await render_template("index.html")
-
-# @app.route("/tailwind.css")
-# async def css():
-#     return await send_file("templates/tailwind.css", cache_timeout=0)
-
-
-# @app.route("/script.js")
-# async def script():
-#     return await send_file("templates/script.js", cache_timeout=0)
-
-
-# route for video segment path
-# @app.route("/videos/<path>")
-# async def path(path):
-#     file_path = os.path.join(OUTPUT_DIRECTORY, path)
-#     return await send_file(file_path, mimetype="application/x-mpegurl")
-
-
-# @app.route("/sushibb")
-# async def sushibb():
-#     return await render_template()
-
-
 # route for all keys
 @app.route("/list")
 async def list_all():
@@ -96,6 +69,18 @@ def rename_file_if(path: str):
     return path
 
 
+@app.route("/command")
+async def command():
+    cmd = request.args.get("cmd")
+
+    if cmd == "flush":
+        tredis = aioredis.from_url("redis://myredis")
+        await tredis.flushall()
+        return jsonify({"status": "success"})
+
+    return jsonify({"status": "nosuccessful"})
+
+
 # command to update all videos
 @app.route("/update")
 async def update():
@@ -134,7 +119,7 @@ async def update():
             # print("debug path")
             # for line in [rel_path, abs_path, output_path]:
             #     print(line)
-            debug = {"ss": 0, "t": 120}
+            # debug = {"ss": 0, "t": 120}
 
             if os.path.exists(output_path):
                 logging.info(f"{output_path} exited, Not process!")
@@ -142,7 +127,6 @@ async def update():
 
             v_input = ffmpeg.input(abs_path, init_hw_device="qsv=hw")
             video = v_input.video
-            vcodec = "copy"
             acodec = "copy"
             audio = v_input["a:0"]
             p_state = -1
@@ -163,24 +147,17 @@ async def update():
                 if stream_idx:
                     p_state = 0
 
-            # set vcodec to h264 if not h264
-            if m_video[0]["codec_name"] != "h264":
-                p_state = 2
-
             # set codec to acc if not acc
             if m_audio[0]["codec_name"] != "aac":
                 acodec = "aac"
 
             # p_state == 0; transcode with subtitles
-            # p_state == 1; transcode audio only
-            # p_state == 2; transcode video to h264
             # else direct copy video and audio
 
             if p_state == 0:
                 video = video.filter("subtitles", f"{abs_path}", si=stream_idx)
                 video = video.filter("hwupload", extra_hw_frames=64)
                 video = video.filter("format", "qsv")
-                vcodec = "h264_qsv"
                 output = ffmpeg.output(
                     video,
                     audio,
@@ -189,31 +166,12 @@ async def update():
                     hls_segment_filename=os.path.join(
                         OUTPUT_DIRECTORY, f"{video_name}_%04d.ts"
                     ),
-                    hls_time=6,
-                    hls_playlist_type="event",
-                    vcodec=vcodec,
-                    acodec=acodec,
-                    global_quality=20,
-                    audio_bitrate="128k",
-                    ac=2,
-                    **debug,
-                )
-            elif p_state == 2:
-                video = video.filter("hwupload", extra_hw_frames=64)
-                video = video.filter("scale_qsv", w=1920, h=1080, format="nv12")
-                vcodec = "h264_qsv"
-                output = ffmpeg.output(
-                    video,
-                    audio,
-                    output_path,
-                    f="hls",
-                    hls_segment_filename=os.path.join(
-                        OUTPUT_DIRECTORY, f"{video_name}_%04d.ts"
-                    ),
-                    hls_time=6,
-                    hls_playlist_type="event",
-                    preset="veryfast",
-                    vcodec=vcodec,
+                    g=48,
+                    keyint_min=48,
+                    sc_threshold=0,
+                    hls_time=4,
+                    hls_playlist_type="vod",
+                    vcodec="h264_qsv",
                     acodec=acodec,
                     global_quality=20,
                     audio_bitrate="128k",
@@ -221,6 +179,8 @@ async def update():
                     **debug,
                 )
             else:
+                video = video.filter("hwupload", extra_hw_frames=64)
+                video = video.filter("scale_qsv", format="nv12")
                 output = ffmpeg.output(
                     video,
                     audio,
@@ -229,10 +189,14 @@ async def update():
                     hls_segment_filename=os.path.join(
                         OUTPUT_DIRECTORY, f"{video_name}_%04d.ts"
                     ),
-                    hls_time=6,
-                    hls_playlist_type="event",
-                    vcodec=vcodec,
+                    g=48,
+                    keyint_min=48,
+                    sc_threshold=0,
+                    hls_time=4,
+                    hls_playlist_type="vod",
+                    vcodec="h264_qsv",
                     acodec=acodec,
+                    global_quality=20,
                     audio_bitrate="128k",
                     ac=2,
                     **debug,
@@ -254,39 +218,57 @@ async def update():
 
             try:
                 output = output.global_args("-hide_banner")
-                print(ffmpeg.compile(output))
                 ffmpeg.run(output)
                 r.hset(key, mapping={"name": f'{"".join(video_name)}.m8u3', "state": 2})
             except ffmpeg.Error as e:
-                logging.error(f"Error Message -> {e.stderr}")
-                logging.error(f"{video_name} unable to process due to certain error")
+                # try default configuration
+                v_input = ffmpeg.input(abs_path, init_hw_device="qsv=hw")
+                video = v_input.video
+                audio = v_input["a:0"]
+                video = video.filter("hwupload", extra_hw_frames=64)
+                video = video.filter("scale_qsv", w=1920, h=1080, format="nv12")
+                output = ffmpeg.output(
+                    video,
+                    audio,
+                    output_path,
+                    f="hls",
+                    hls_segment_filename=os.path.join(
+                        OUTPUT_DIRECTORY, f"{video_name}_%04d.ts"
+                    ),
+                    g=48,
+                    keyint_min=48,
+                    sc_threshold=0,
+                    hls_time=4,
+                    hls_playlist_type="event",
+                    preset="veryfast",
+                    vcodec="h264_qsv",
+                    acodec=acodec,
+                    global_quality=20,
+                    audio_bitrate="128k",
+                    ac=2,
+                    **debug,
+                )
 
-                # delete keys
-                r.hdel("movie", key)
-                r.hdel(key, "name", "state")
+                try:
+                    output = output.global_args("-hide_banner")
+                    ffmpeg.run(output)
+                    r.hset(
+                        key, mapping={"name": f'{"".join(video_name)}.m8u3', "state": 2}
+                    )
+                except ffmpeg.Error as e:
+                    logging.error(f"Error Message -> {e.stderr}")
+                    logging.error(
+                        f"{video_name} unable to process due to certain error"
+                    )
+
+                    # delete keys
+                    r.hdel("movie", key)
+                    r.hdel(key, "name", "state")
 
         r.hset("system", mapping={"status": 0})
 
     asyncio.get_running_loop().run_in_executor(None, synchronous)
     return "we are updating all videos"
-
-
-@app.route("/debug")
-async def debug():
-    def sync():
-        # find supported video stream
-        supported = ["mkv", "mp4"]
-        items = []
-
-        for container in supported:
-            items += glob.glob(f"{DIRECTORY}/**/*.{container}", recursive=True)
-
-        for item in items:
-            print(item)
-
-    asyncio.get_running_loop().run_in_executor(None, sync)
-
-    return "this is just a debug"
 
 
 if __name__ == "__main__":

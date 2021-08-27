@@ -1,6 +1,6 @@
-jsconfig.json
-node_modules
-transcoder.log
+*jsconfig.json
+*node_modules
+*transcoder.log
 *.log
-__pycache__*
-.vscode/
+*__pycache__*
+*.vscode/

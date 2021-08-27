@@ -1,16 +1,34 @@
 services:
+  nginx:
+    container_name: mynginx
+    build: nginx
+    ports:
+      - "8080:80"
+    volumes:
+      - ~/Videos/process:/process/videos
+      # debug, enable in docker development
+      # because server will automatically refresh
+      # make you enable tailwind compiler
+      - ./nginx/templates:/usr/share/nginx/html
   python:
     container_name: mypython
     build: .
-    ports:
-      - "8080:80"
     environment:
       - OUTPUT_DIR=/process/videos
       - DIRECTORY=/directory
+    ports:
+      # debug only, open to outside world
+      - "5000:5000"
     volumes:
-      - myredis:/data
+      # most important parameter
+      # change it to your folders
       - ~/Videos/process:/process/videos
       - ~/test:/directory
+      #
+
+      # debug, enable in docker development
+      # because server will automatically refresh
+      - ./server.py:/pythonapp/server.py
     devices:
       - /dev/dri/renderD128:/dev/dri/renderD128
   redis:
@@ -18,6 +36,8 @@ services:
     image: redis
     command: redis-server --appendonly yes
     restart: unless-stopped
+    volumes:
+      - myredis:/data
 networks:
   default:
     name: my-net
