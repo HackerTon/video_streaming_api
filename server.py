@@ -1,17 +1,20 @@
 import asyncio
+import aiofiles
 import glob
+import logging
 import os
 import random
 import re
+import io
 import sys
-import logging
 
 import aioredis
 import ffmpeg
 import redis
 from quart import Quart, render_template, request, send_file
-from quart_cors import cors
+from base64 import b64decode, b64encode
 from quart.json import jsonify
+from quart_cors import cors
 
 app = Quart(__name__)
 app = cors(app)
@@ -25,6 +28,34 @@ except KeyError as e:
     print("Set environment variable DIRECTORY & OUTPUT_DIR!")
     logging.info("Set environment variable DIRECTORY & OUTPUT_DIR!")
     sys.exit()
+
+
+@app.route("/getvideo/<name>")
+async def get(name):
+    tredis = aioredis.from_url("redis://myredis", db=1)
+    img_bytes = await tredis.get(f"short:{name}")
+    if img_bytes:
+        img_bytes = b64decode(img_bytes)
+        print("cached")
+        return await send_file(io.BytesIO(img_bytes), mimetype="video/mp4")
+
+    async with aiofiles.open(
+        f"{OUTPUT_DIRECTORY}/{name}.mp4",
+        "rb",
+    ) as f:
+        filebytes = await f.read()
+        encoded = b64encode(filebytes)
+        await tredis.set(f"short:{name}", encoded)
+        await tredis.expire(f"short:{name}", 10)
+        print("uncached")
+        return await send_file(io.BytesIO(filebytes), mimetype="video/mp4")
+
+
+@app.route("/flush")
+async def flush():
+    tredis = aioredis.from_url("redis://myredis", db=1)
+    await tredis.flushdb()
+    return "done"
 
 
 # route for all keys
@@ -75,7 +106,7 @@ async def command():
 
     if cmd == "flush":
         tredis = aioredis.from_url("redis://myredis")
-        await tredis.flushall()
+        await tredis.flushdb()
         return jsonify({"status": "success"})
 
     return jsonify({"status": "nosuccessful"})
@@ -119,7 +150,7 @@ async def update():
             # print("debug path")
             # for line in [rel_path, abs_path, output_path]:
             #     print(line)
-            # debug = {"ss": 0, "t": 120}
+            debug = {"ss": 0, "t": 120}
 
             if os.path.exists(output_path):
                 logging.info(f"{output_path} exited, Not process!")
@@ -204,13 +235,13 @@ async def update():
 
             key = random.getrandbits(32)
             # add into movie list
-            r.hset("movie", key, f'{"".join(video_name)}.m8u3')
+            r.hset("movie", key, f'{"".join(video_name)}')
 
             # add to our hash
             r.hset(
                 key,
                 mapping={
-                    "name": f'{"".join(video_name)}.m8u3',
+                    "name": f'{"".join(video_name)}',
                     "state": 1,
                     "description": "is a movie",
                 },
@@ -219,7 +250,7 @@ async def update():
             try:
                 output = output.global_args("-hide_banner")
                 ffmpeg.run(output)
-                r.hset(key, mapping={"name": f'{"".join(video_name)}.m8u3', "state": 2})
+                r.hset(key, mapping={"name": f'{"".join(video_name)}', "state": 2})
             except ffmpeg.Error as e:
                 # try default configuration
                 v_input = ffmpeg.input(abs_path, init_hw_device="qsv=hw")
@@ -252,9 +283,7 @@ async def update():
                 try:
                     output = output.global_args("-hide_banner")
                     ffmpeg.run(output)
-                    r.hset(
-                        key, mapping={"name": f'{"".join(video_name)}.m8u3', "state": 2}
-                    )
+                    r.hset(key, mapping={"name": f'{"".join(video_name)}', "state": 2})
                 except ffmpeg.Error as e:
                     logging.error(f"Error Message -> {e.stderr}")
                     logging.error(
@@ -264,6 +293,27 @@ async def update():
                     # delete keys
                     r.hdel("movie", key)
                     r.hdel(key, "name", "state")
+
+                    # generate a short thumbnail clip
+
+            v_input = ffmpeg.input(abs_path, init_hw_device="qsv=hw")
+            video = v_input.video
+            audio = v_input["a:0"]
+            video = video.filter("hwupload", extra_hw_frames=64)
+            video = video.filter("scale_qsv", w=1920, h=1080, format="nv12")
+            output = ffmpeg.output(
+                video,
+                audio,
+                os.path.join(OUTPUT_DIRECTORY, f"{video_name}.mp4"),
+                vcodec="h264_qsv",
+                acodec=acodec,
+                global_quality=20,
+                audio_bitrate="128k",
+                ac=2,
+                ss=0,
+                t=10,
+                f="mp4",
+            ).run()
 
         r.hset("system", mapping={"status": 0})
 

@@ -46,6 +46,41 @@ const loader = async (response) => {
     let node = document.createElement("button");
     let titleChildNode = document.createElement("div");
     let descChildNode = document.createElement("div");
+    let video = document.createElement("video");
+    let videoChild = document.createElement("source");
+
+    // video.oncontextmenu = "return false;";
+    video.setAttribute("oncontextmenu", "return false;");
+    video.appendChild(videoChild);
+    video.muted = true;
+    video.id = element["name"];
+    video.className = "w-full";
+    videoChild.src = "/getvideo/" + element["name"];
+    videoChild.type = "video/mp4";
+    video.load();
+
+    node.addEventListener("mouseover", () => {
+      if (!video.paused || !video.ended) {
+        video.play();
+        console.log("played");
+      }
+    });
+    node.addEventListener("mouseout", () => {
+      console.log("pause");
+      video.pause();
+      video.currentTime = 0.0;
+    });
+    node.addEventListener("touchstart", () => {
+      if (!video.paused || !video.ended) {
+        video.play();
+        console.log("played");
+      }
+    });
+    node.addEventListener("touchend", () => {
+      console.log("pause");
+      video.pause();
+      video.currentTime = 0.0;
+    });
 
     titleChildNode.className = "text-black font-bold text-lg";
     titleChildNode.textContent = element["name"];
@@ -53,6 +88,7 @@ const loader = async (response) => {
     descChildNode.textContent = element["description"];
     node.className = "box";
 
+    node.appendChild(video);
     node.appendChild(titleChildNode);
     node.appendChild(descChildNode);
 
@@ -62,7 +98,7 @@ const loader = async (response) => {
 
       player.src({
         type: "application/x-mpegURL",
-        src: "/videos/" + element["name"],
+        src: "/videos/" + element["name"] + ".m8u3",
       });
     });
     boxes.appendChild(node);

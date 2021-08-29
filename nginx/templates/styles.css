@@ -33,7 +33,7 @@
 .box {
   @apply bg-white shadow-md
   rounded-lg overflow-hidden
-  h-20 pl-10 md:pl-5 text-left
+  grid grid-cols-1 place-items-center
   hover:-translate-y-1 transition active:bg-gray-400 hover:ring hover:ring-pink-600;
 }
 
