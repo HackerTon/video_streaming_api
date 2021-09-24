@@ -124,7 +124,7 @@ async def update():
 
         r.hset("system", mapping={"status": 1})
 
-        supported = ["mkv", "mp4"]
+        supported = ["mkv", "mp4", "avi"]
         videos = []
 
         for container in supported:
@@ -150,7 +150,7 @@ async def update():
             # print("debug path")
             # for line in [rel_path, abs_path, output_path]:
             #     print(line)
-            debug = {"ss": 0, "t": 120}
+            # debug = {"ss": 0, "t": 120}
 
             if os.path.exists(output_path):
                 logging.info(f"{output_path} exited, Not process!")

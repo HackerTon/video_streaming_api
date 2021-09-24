@@ -49,7 +49,6 @@ const loader = async (response) => {
     let video = document.createElement("video");
     let videoChild = document.createElement("source");
 
-    // video.oncontextmenu = "return false;";
     video.setAttribute("oncontextmenu", "return false;");
     video.appendChild(videoChild);
     video.muted = true;
@@ -62,22 +61,18 @@ const loader = async (response) => {
     node.addEventListener("mouseover", () => {
       if (!video.paused || !video.ended) {
         video.play();
-        console.log("played");
       }
     });
     node.addEventListener("mouseout", () => {
-      console.log("pause");
       video.pause();
       video.currentTime = 0.0;
     });
     node.addEventListener("touchstart", () => {
       if (!video.paused || !video.ended) {
         video.play();
-        console.log("played");
       }
     });
     node.addEventListener("touchend", () => {
-      console.log("pause");
       video.pause();
       video.currentTime = 0.0;
     });
@@ -109,7 +104,6 @@ fetch("/list").then((response) => {
   loader(response).catch((err) => {
     // fallback to debugging host if
     // does not work
-    console.log(err);
     fetch("http://localhost:5000/list").then(async (response) => {
       loader(response);
     });
